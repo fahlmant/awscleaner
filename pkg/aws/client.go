@@ -1,20 +1,13 @@
-package main
+package clientpkg
 
 import (
-	_ "context"
-	"fmt"
-	_ "fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-)
-
-const (
-	awsCredsSecretIDKey     = ""
-	awsCredsSecretAccessKey = ""
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 )
 
 // Client is a wrapper object for actual AWS SDK clients to allow for easier testing.
@@ -28,20 +21,16 @@ type Client interface {
 	DescribeSnapshots(*ec2.DescribeSnapshotsInput) (*ec2.DescribeSnapshotsOutput, error)
 	DeleteSnapshot(*ec2.DeleteSnapshotInput) (*ec2.DeleteSnapshotOutput, error)
 	DescribeInstances(*ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
+
+	//STS
+	AssumeRole(*sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error)
+	GetCallerIdentity(*sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
+	GetFederationToken(*sts.GetFederationTokenInput) (*sts.GetFederationTokenOutput, error)
 }
 
 type awsClient struct {
 	ec2Client ec2iface.EC2API
-}
-
-// NewAwsClientInput input for new aws client
-type NewAwsClientInput struct {
-	AwsCredsSecretIDKey     string
-	AwsCredsSecretAccessKey string
-	AwsToken                string
-	AwsRegion               string
-	SecretName              string
-	NameSpace               string
+	stsClient stsiface.STSAPI
 }
 
 func (c *awsClient) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
@@ -76,6 +65,22 @@ func (c *awsClient) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.D
 	return c.ec2Client.DescribeInstances(input)
 }
 
+func (c *awsClient) AssumeRole(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+	return c.stsClient.AssumeRole(input)
+}
+
+func (c *awsClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+	return c.stsClient.GetCallerIdentity(input)
+}
+
+func (c *awsClient) GetFederationToken(input *sts.GetFederationTokenInput) (*sts.GetFederationTokenOutput, error) {
+	GetFederationTokenOutput, err := c.stsClient.GetFederationToken(input)
+	if GetFederationTokenOutput != nil {
+		return GetFederationTokenOutput, err
+	}
+	return &sts.GetFederationTokenOutput{}, err
+}
+
 // NewClient creates our client wrapper object for the actual AWS clients we use.
 func NewClient(awsAccessID, awsAccessSecret, token, region string) (Client, error) {
 	awsConfig := &aws.Config{Region: aws.String(region)}
@@ -89,14 +94,6 @@ func NewClient(awsAccessID, awsAccessSecret, token, region string) (Client, erro
 
 	return &awsClient{
 		ec2Client: ec2.New(s),
+		stsClient: sts.New(s),
 	}, nil
-}
-
-func main() {
-
-	client, err := NewClient("", "", "", "us-east-1")
-	fmt.Println(err)
-
-	result, err := client.DescribeInstances(&ec2.DescribeInstancesInput{})
-	fmt.Println(result)
 }
