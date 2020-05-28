@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	awsCredsSecretIDKey     = "AKIAUBEE5Y3BCPHVVKVV"
-	awsCredsSecretAccessKey = "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"
+	awsCredsSecretIDKey     = ""
+	awsCredsSecretAccessKey = ""
 )
 
 // Client is a wrapper object for actual AWS SDK clients to allow for easier testing.
