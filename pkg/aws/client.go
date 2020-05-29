@@ -6,6 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go/service/organizations"
+	"github.com/aws/aws-sdk-go/service/organizations/organizationsiface"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 )
@@ -26,11 +28,21 @@ type Client interface {
 	AssumeRole(*sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error)
 	GetCallerIdentity(*sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
 	GetFederationToken(*sts.GetFederationTokenInput) (*sts.GetFederationTokenOutput, error)
+
+	//Organizations
+	ListAccounts(*organizations.ListAccountsInput) (*organizations.ListAccountsOutput, error)
+	CreateAccount(*organizations.CreateAccountInput) (*organizations.CreateAccountOutput, error)
+	DescribeCreateAccountStatus(*organizations.DescribeCreateAccountStatusInput) (*organizations.DescribeCreateAccountStatusOutput, error)
+	MoveAccount(*organizations.MoveAccountInput) (*organizations.MoveAccountOutput, error)
+	CreateOrganizationalUnit(*organizations.CreateOrganizationalUnitInput) (*organizations.CreateOrganizationalUnitOutput, error)
+	ListOrganizationalUnitsForParent(*organizations.ListOrganizationalUnitsForParentInput) (*organizations.ListOrganizationalUnitsForParentOutput, error)
+	ListChildren(*organizations.ListChildrenInput) (*organizations.ListChildrenOutput, error)
 }
 
 type awsClient struct {
 	ec2Client ec2iface.EC2API
 	stsClient stsiface.STSAPI
+	orgClient organizationsiface.OrganizationsAPI
 }
 
 func (c *awsClient) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
@@ -81,6 +93,34 @@ func (c *awsClient) GetFederationToken(input *sts.GetFederationTokenInput) (*sts
 	return &sts.GetFederationTokenOutput{}, err
 }
 
+func (c *awsClient) ListAccounts(input *organizations.ListAccountsInput) (*organizations.ListAccountsOutput, error) {
+	return c.orgClient.ListAccounts(input)
+}
+
+func (c *awsClient) CreateAccount(input *organizations.CreateAccountInput) (*organizations.CreateAccountOutput, error) {
+	return c.orgClient.CreateAccount(input)
+}
+
+func (c *awsClient) DescribeCreateAccountStatus(input *organizations.DescribeCreateAccountStatusInput) (*organizations.DescribeCreateAccountStatusOutput, error) {
+	return c.orgClient.DescribeCreateAccountStatus(input)
+}
+
+func (c *awsClient) MoveAccount(input *organizations.MoveAccountInput) (*organizations.MoveAccountOutput, error) {
+	return c.orgClient.MoveAccount(input)
+}
+
+func (c *awsClient) CreateOrganizationalUnit(input *organizations.CreateOrganizationalUnitInput) (*organizations.CreateOrganizationalUnitOutput, error) {
+	return c.orgClient.CreateOrganizationalUnit(input)
+}
+
+func (c *awsClient) ListOrganizationalUnitsForParent(input *organizations.ListOrganizationalUnitsForParentInput) (*organizations.ListOrganizationalUnitsForParentOutput, error) {
+	return c.orgClient.ListOrganizationalUnitsForParent(input)
+}
+
+func (c *awsClient) ListChildren(input *organizations.ListChildrenInput) (*organizations.ListChildrenOutput, error) {
+	return c.orgClient.ListChildren(input)
+}
+
 // NewClient creates our client wrapper object for the actual AWS clients we use.
 func NewClient(awsAccessID, awsAccessSecret, token, region string) (Client, error) {
 	awsConfig := &aws.Config{Region: aws.String(region)}
@@ -95,5 +135,6 @@ func NewClient(awsAccessID, awsAccessSecret, token, region string) (Client, erro
 	return &awsClient{
 		ec2Client: ec2.New(s),
 		stsClient: sts.New(s),
+		orgClient: organizations.New(s),
 	}, nil
 }
