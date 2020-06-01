@@ -22,18 +22,10 @@ func main() {
 	fmt.Println("client is %v", client)
 	fmt.Println("error is %v", err)
 
-	// trying to describe instances , it will probably fail with a root account
-	result, err := client.DescribeInstances(&ec2.DescribeInstancesInput{})
-	if err != nil {
-		fmt.Println("you cannot describe instances yet , because error \n", err)
-	} else {
-		fmt.Println(result)
-	}
-
 	// creating a caller identity
+	// jst for debugging purposes
 	calleridentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	fmt.Println("calleridentity is ", calleridentity)
-
 	fmt.Println("the test account id is ", accountid)
 
 	assumedRole, err := client.AssumeRole(&sts.AssumeRoleInput{RoleArn: aws.String("arn:aws:iam::173028519319:role/OrganizationAccountAccessRole"), RoleSessionName: aws.String("agautam")})
@@ -48,19 +40,25 @@ func main() {
 	fmt.Println("new secret key is", assumedSecretKey)
 	fmt.Println("new session token\n\n", assumedSessionToken)
 
-	client2, err := clientpkg.NewClient(assumedAccessKey, assumedSecretKey, assumedSessionToken, "us-east-1")
-	fmt.Println("new_client is %v", client2)
-	fmt.Println("error is %v", err)
+	regionRange := []string{"us-east-1", "us-east-2", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "ap-northeast-1", "ap-northeast-2", "ap-south-1", "ap-southeast-1", "ap-southeast-2", "sa-east-1"}
+	for _, region := range regionRange {
 
-	// creating a caller identity
-	calleridentity2, err := client2.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-	fmt.Println("new calleridentity is ", calleridentity2)
+		fmt.Println("\n EC2 instances in region ", region)
 
-	// trying to describe instances , it will probably fail with a root account
-	result2, err := client2.DescribeInstances(&ec2.DescribeInstancesInput{})
-	fmt.Println("error is ", err)
-	fmt.Println("EC2 instances", result2)
+		client2, err := clientpkg.NewClient(assumedAccessKey, assumedSecretKey, assumedSessionToken, region)
 
+		fmt.Println("new_client is %v", client2)
+		fmt.Println("error is %v", err)
+
+		// creating a caller identity
+		calleridentity2, err := client2.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+		fmt.Println("new calleridentity is ", calleridentity2)
+
+		// trying to describe instances , it will probably fail with a root account
+		result2, err := client2.DescribeInstances(&ec2.DescribeInstancesInput{})
+		fmt.Println("error is ", err)
+		fmt.Println("EC2 instances", result2)
+	}
 	// something wrong here. no error but no EC2 instances printed
 
 }
